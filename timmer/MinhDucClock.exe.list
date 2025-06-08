@@ -1,0 +1,972 @@
+EMU8086 GENERATED LISTING. MACHINE CODE <- SOURCE.
+ 
+MinhDucClock.exe -- emu8086 assembler version: 4.08  
+ 
+[ 2025/6/8  --  14:11:58 ] 
+ 
+===================================================================================================
+[LINE]     LOC: MACHINE CODE                          SOURCE
+===================================================================================================
+ 
+[   1]        :                                       CODE SEGMENT
+[   2]        :                                       assume cs:CODE,ds:data,ss:stack
+[   3]        :                                       
+[   4]    0000:                                       START:
+[   5]    0000: B8 4B 00                              mov ax,data
+[   6]    0003: 8E D8                                 mov ds,ax
+[   7]    0005: B8 4D 00                              	mov ax,stack
+[   8]    0008: 8E D0                                 mov ss,ax
+[   9]    000A: B8 00 02                              mov ax,sta_length
+[  10]    000D: 8B E0                                 mov sp,ax
+[  11]        :                                       
+[  12]    000F: E8 E7 01                              call init_TIME_8255A
+[  13]    0012: E8 EE 01                              	call init_BUZZER_8255A
+[  14]    0015: E8 F2 01                              	call init_TIME_8253A
+[  15]    0018: E8 A6 00                              	call setup_int_60
+[  16]    001B: E8 98 00                              	call init_COM
+[  17]    001E: E8 C1 01                              call init_8259A
+[  18]        :                                       	; enable INTerrupt
+[  19]    0021: FB                                    	sti
+[  20]        :                                       	; get time
+[  21]    0022:                                       	show:
+[  22]    0022: E8 F1 03                              	call show_time
+[  23]    0025: E8 A2 02                              	call check_time_pc
+[  24]    0028: E8 24 00                              	call check_buzzer_time_pc
+[  25]    002B: E8 6C 00                              	call check_sound
+[  26]    002E: E8 03 00                              	call output_light
+[  27]        :                                       	;call check_weather
+[  28]    0031: EB EF                                 	jmp show
+[  29]    0033: F4                                    	hlt
+[  30]        :                                       
+[  31]        :                                       send_com_ch macro cha
+[  32]        :                                       push dx
+[  33]        :                                       push ax
+[  34]        :                                       mov dx,COM_PORT_8251A_DATA
+[  35]        :                                       mov al,cha
+[  36]        :                                       out dx,al
+[  37]        :                                       pop ax
+[  38]        :                                       pop dx
+[  39]        :                                       endm
+[  40]        :                                       
+[  41]    0034:                                       output_light proc
+[  42]    0034: 52                                    	push dx
+[  43]    0035: 50                                    	push ax
+[  44]    0036: 80 3E 16 00 00                        	cmp led_mode,00H
+[  45]    003B: 75 08                                 	jne light_on
+[  46]        :                                       	;light off
+[  47]    003D: BA 20 00                              	mov dx,BUZZER_PORT_8255_A
+[  48]    0040: B0 00                                 	mov al,0
+[  49]    0042: EE                                    	out dx,al
+[  50]    0043: EB 07                                 	jmp output_light_end
+[  51]    0045:                                       	light_on:
+[  52]    0045: BA 20 00                              	mov dx,BUZZER_PORT_8255_A
+[  53]    0048: A0 1B 00                              	mov al,light_values
+[  54]    004B: EE                                    	out dx,al
+[  55]    004C:                                       	output_light_end:
+[  56]    004C: 58                                    	pop ax
+[  57]    004D: 5A                                    	pop dx
+[  58]    004E: C3                                    	ret
+[  59]        :                                       output_light endp
+[  60]        :                                       
+[  61]    004F:                                       check_buzzer_time_pc proc
+[  62]    004F: 52                                    	push dx
+[  63]    0050: 50                                    	push ax
+[  64]        :                                       	
+[  65]    0051: B9 00 00                              mov cx,0
+[  66]        :                                       
+[  67]    0054:                                       check_buzzer_time_pc5:
+[  68]    0054: BA 24 00                              	mov dx,BUZZER_PORT_8255_C
+[  69]    0057: EC                                    	in al,dx
+[  70]    0058: 0C 0F                                 	or al,0FH
+[  71]    005A: F6 D0                                 	not al
+[  72]    005C: 24 20                                 	and al,00100000B
+[  73]    005E: 74 05                                 	je check_buzzer_time_pc5_end
+[  74]    0060: B9 01 00                              	mov cx,1
+[  75]    0063: EB EF                                 	jmp check_buzzer_time_pc5
+[  76]    0065:                                       check_buzzer_time_pc5_end:
+[  77]    0065: 83 F9 01                              	cmp cx,1
+[  78]    0068: 75 0D                                 	jne check_buzzer_time_pc7
+[  79]    006A: 52 50 BA 08 00 B0 52 EE 58 5A         	send_com_ch 'R'
+[  80]        :                                       	
+[  81]    0074: B9 00 00                              mov cx,0
+[  82]    0077:                                       check_buzzer_time_pc7:
+[  83]    0077: BA 24 00                              	mov dx,BUZZER_PORT_8255_C
+[  84]    007A: EC                                    	in al,dx
+[  85]    007B: 0C 0F                                 	or al,0FH
+[  86]    007D: F6 D0                                 	not al
+[  87]    007F: 24 80                                 	and al,10000000B
+[  88]    0081: 74 05                                 	je check_buzzer_time_pc7_end
+[  89]    0083: B9 01 00                              	mov cx,1
+[  90]    0086: EB EF                                 	jmp check_buzzer_time_pc7
+[  91]    0088:                                       check_buzzer_time_pc7_end:
+[  92]    0088: 83 F9 01                              	cmp cx,1
+[  93]    008B: 75 0A                                 	jne check_buzzer_time_pc_end
+[  94]    008D: 52 50 BA 08 00 B0 4E EE 58 5A         	send_com_ch 'N'
+[  95]        :                                       
+[  96]    0097:                                       check_buzzer_time_pc_end:
+[  97]    0097: 58                                    	pop ax
+[  98]    0098: 5A                                    	pop dx
+[  99]    0099: C3                                    	ret
+[ 100]        :                                       check_buzzer_time_pc endp
+[ 101]        :                                       
+[ 102]        :                                       
+[ 103]    009A:                                       check_sound proc
+[ 104]    009A: 50                                    	push ax
+[ 105]    009B: 53                                    	push bx
+[ 106]    009C: 52                                    	push dx
+[ 107]    009D: BB 19 00                              	lea bx,clock_sounded
+[ 108]    00A0: 3E 8A 07                              	mov al,ds:[bx]
+[ 109]    00A3: BA 24 00                              	mov dx,BUZZER_PORT_8255_C
+[ 110]    00A6: 3C 00                                 	cmp al,0
+[ 111]    00A8: 74 05                                 	je no_sound
+[ 112]        :                                       	; trigget sound
+[ 113]    00AA: B0 01                                 	mov al,00000001B
+[ 114]    00AC: EE                                    	out dx,al
+[ 115]    00AD: EB 03                                 	jmp check_sound_end
+[ 116]    00AF:                                       	no_sound:
+[ 117]    00AF: B0 00                                 	mov al,00000000B
+[ 118]    00B1: EE                                    	out dx,al
+[ 119]    00B2:                                       	check_sound_end:
+[ 120]    00B2: 5A                                    	pop dx
+[ 121]    00B3: 5B                                    	pop bx
+[ 122]    00B4: 58                                    	pop ax
+[ 123]        :                                       		
+[ 124]    00B5: C3                                    	ret
+[ 125]        :                                       check_sound endp
+[ 126]        :                                       
+[ 127]    00B6:                                       init_COM proc
+[ 128]    00B6: BA 0A 00                              MOV   DX, COM_PORT_8251A_CONTROL
+[ 129]    00B9: B0 4D                                 MOV   AL, 01001101b
+[ 130]    00BB: EE                                    OUT   DX, AL
+[ 131]    00BC: 90                                    nop
+[ 132]    00BD: B0 15                                 MOV   AL, 00010101b
+[ 133]    00BF: EE                                    OUT   DX, AL
+[ 134]    00C0: C3                                    ret
+[ 135]        :                                       init_COM endp
+[ 136]        :                                       
+[ 137]        :                                       
+[ 138]        :                                       
+[ 139]        :                                       ; interrupt 80h
+[ 140]    00C1:                                       setup_int_60 proc
+[ 141]    00C1: 50                                    push ax
+[ 142]    00C2: 51                                    push cx
+[ 143]    00C3: 06                                    push es
+[ 144]    00C4: 1E                                    push ds
+[ 145]    00C5: 56                                    push si
+[ 146]    00C6: 57                                    push di
+[ 147]        :                                       
+[ 148]    00C7: B8 00 00                              	mov ax, 0
+[ 149]    00CA: 8E C0                                 	mov es, ax
+[ 150]    00CC: 8C C8                                 	mov ax, cs
+[ 151]    00CE: 8E D8                                 	mov ds, ax
+[ 152]    00D0: BE DA 01                              	mov si, offset int_60_service
+[ 153]    00D3: BF 00 02                              	mov di, 200h
+[ 154]    00D6: B9 07 00                              	mov cx, offset int_60_end - int_60_service
+[ 155]    00D9: FC                                    	cld
+[ 156]    00DA: F3 A4                                 	rep movsb
+[ 157]    00DC: 26 C7 06 80 01 00 02                  	mov word ptr es:[60h * 4], 200h ;
+[ 158]    00E3: 26 C7 06 82 01 00 00                  	mov word ptr es:[60h * 4 + 2], 0
+[ 159]        :                                       	
+[ 160]    00EA: 5F                                    	pop di
+[ 161]    00EB: 5E                                    	pop si
+[ 162]    00EC: 1F                                    	pop ds
+[ 163]    00ED: 07                                    	pop es
+[ 164]    00EE: 59                                    	pop cx
+[ 165]    00EF: 58                                    	pop ax
+[ 166]        :                                       
+[ 167]    00F0: C3                                    ret
+[ 168]        :                                       setup_int_60 endp
+[ 169]        :                                       
+[ 170]        :                                       
+[ 171]    00F1:                                       add_time proc far
+[ 172]        :                                       ;LOCAL check_s_1, check_s_2,check_m_2,check_m_1,check_h_2,re_h,end
+[ 173]    00F1: 50                                    push ax
+[ 174]    00F2: 53                                    push bx
+[ 175]    00F3: 52                                    push dx
+[ 176]    00F4: 51                                    	push cx
+[ 177]    00F5: B9 00 00                              	mov cx,0
+[ 178]    00F8:                                       check_s_1:
+[ 179]    00F8: BB 0E 00                              lea bx,led_sec
+[ 180]        :                                       ; al <- second
+[ 181]    00FB: 3E 8A 47 01                           mov al,ds:[bx]+1
+[ 182]    00FF: 3C 08                                 cmp al,8
+[ 183]    0101: 77 08                                 ja check_s_2
+[ 184]    0103: FE C0                                 inc al
+[ 185]    0105: 3E 88 47 01                           mov ds:[bx]+1,al
+[ 186]    0109: EB 7A                                 jmp add_time_end
+[ 187]    010B:                                       check_s_2:
+[ 188]    010B: 3E C6 47 01 00                        mov byte ptr ds:[bx]+1,00H
+[ 189]    0110: 3E 8A 07                              mov al,ds:[bx]
+[ 190]    0113: 3C 04                                 cmp al,4
+[ 191]    0115: 77 07                                 ja check_m_2
+[ 192]    0117: FE C0                                 inc al
+[ 193]    0119: 3E 88 07                              mov ds:[bx],al
+[ 194]    011C: EB 67                                 jmp add_time_end
+[ 195]    011E:                                       check_m_2:
+[ 196]    011E: 3E C6 07 00                           mov byte ptr ds:[bx],0
+[ 197]    0122: BB 0C 00                              lea bx,led_min
+[ 198]    0125: 3E 8A 47 01                           mov al,ds:[bx]+1
+[ 199]    0129: 3C 08                                 cmp al,8
+[ 200]    012B: 77 08                                 ja check_m_1
+[ 201]    012D: FE C0                                 inc al
+[ 202]    012F: 3E 88 47 01                           mov ds:[bx]+1,al
+[ 203]    0133: EB 50                                 jmp add_time_end
+[ 204]    0135:                                       check_m_1:
+[ 205]    0135: 3E C6 47 01 00                        mov byte ptr ds:[bx]+1,0
+[ 206]    013A: 3E 8A 07                              mov al,ds:[bx]
+[ 207]    013D: 3C 04                                 cmp al,4
+[ 208]    013F: 77 07                                 ja check_h_2
+[ 209]    0141: FE C0                                 inc al
+[ 210]    0143: 3E 88 07                              mov ds:[bx],al
+[ 211]    0146: EB 3D                                 jmp add_time_end
+[ 212]    0148:                                       check_h_2:
+[ 213]    0148: 52 50 BA 08 00 B0 52 EE 58 5A         send_com_ch COM_REFRESH_WEATHER_CH
+[ 214]    0152: B9 01 00                              	mov cx,1
+[ 215]        :                                       ;
+[ 216]    0155: 3E C6 07 00                           mov byte ptr ds:[bx],00H
+[ 217]    0159: BB 0A 00                              lea bx,led_hour
+[ 218]    015C: 3E 8A 07                              mov al,byte ptr ds:[bx]
+[ 219]    015F: B2 0A                                 mov dl,10
+[ 220]    0161: F6 E2                                 mul dl
+[ 221]    0163: 3E 02 47 01                           add al,byte ptr ds:[bx]+1
+[ 222]    0167: FE C0                                 inc al
+[ 223]    0169: 3C 18                                 cmp al,24
+[ 224]    016B: 75 0B                                 jne re_h
+[ 225]    016D: 3E C6 07 00                           mov byte ptr ds:[bx],0
+[ 226]    0171: 3E C6 47 01 00                        mov byte ptr ds:[bx]+1,0
+[ 227]    0176: EB 0D                                 jmp add_time_end
+[ 228]    0178:                                       re_h:
+[ 229]    0178: 32 E4                                 xor ah,ah
+[ 230]    017A: B2 0A                                 mov dl,10
+[ 231]    017C: F6 F2                                 div dl
+[ 232]    017E: 3E 88 07                              mov ds:[bx],al
+[ 233]    0181: 3E 88 67 01                           mov ds:[bx]+1,ah
+[ 234]    0185:                                       add_time_end:
+[ 235]    0185: E8 20 00                              	call check_should_clock_ring
+[ 236]    0188: A0 1B 00                              	mov al,light_values
+[ 237]    018B: D0 C0                                 	rol al,1
+[ 238]    018D: A2 1B 00                              	mov light_values,al
+[ 239]    0190: 83 F9 01                              	cmp cx,1
+[ 240]    0193: 74 08                                 	je open_hour_sound;
+[ 241]    0195: BA 22 00                              	mov dx,BUZZER_PORT_8255_B
+[ 242]    0198: B0 00                                 	mov al,00000000B
+[ 243]    019A: EE                                    	out dx,al
+[ 244]    019B: EB 06                                 	jmp open_hour_sound_end
+[ 245]    019D:                                       open_hour_sound:	
+[ 246]    019D: BA 22 00                              	mov dx,BUZZER_PORT_8255_B
+[ 247]    01A0: B0 04                                 	mov al,00000100B
+[ 248]    01A2: EE                                    	out dx,al
+[ 249]    01A3:                                       open_hour_sound_end:
+[ 250]    01A3: 59                                    	pop cx
+[ 251]    01A4: 5A                                    pop dx
+[ 252]    01A5: 5B                                    pop bx
+[ 253]    01A6: 58                                    pop ax
+[ 254]    01A7: CB                                    	retf
+[ 255]        :                                       add_time endp
+[ 256]        :                                       
+[ 257]    01A8:                                       check_should_clock_ring proc
+[ 258]    01A8: 56                                    	push si
+[ 259]    01A9: 57                                    	push di
+[ 260]    01AA: 50                                    	push ax
+[ 261]    01AB: 53                                    	push bx
+[ 262]    01AC: 51                                    	push cx
+[ 263]        :                                       
+[ 264]    01AD: BE 0A 00                              	lea si,led_hour
+[ 265]    01B0: BF 10 00                              	lea di,clock_hour
+[ 266]    01B3: B9 06 00                              	mov cx,6
+[ 267]    01B6:                                       compare_time:
+[ 268]    01B6: 3E 8A 04                              	mov al,ds:[si]
+[ 269]    01B9: 3E 3A 05                              	cmp al,byte ptr ds:[di]
+[ 270]    01BC: 75 16                                 	jne check_should_clock_ring_end
+[ 271]    01BE: 46                                    	inc si
+[ 272]    01BF: 47                                    	inc di
+[ 273]    01C0: E2 F4                                 	loop compare_time
+[ 274]    01C2: BB 18 00                              	lea bx,clock_enabled
+[ 275]    01C5: 3E 8A 07                              	mov al,ds:[bx]
+[ 276]    01C8: 3C 00                                 	cmp al,0
+[ 277]    01CA: 74 08                                 	je check_should_clock_ring_end
+[ 278]    01CC: B0 01                                 	mov al,01H
+[ 279]    01CE: BB 19 00                              	lea bx,clock_sounded
+[ 280]    01D1: 3E 88 07                              	mov ds:[bx],al
+[ 281]    01D4:                                       	check_should_clock_ring_end:
+[ 282]    01D4: 59                                    	pop cx
+[ 283]    01D5: 5B                                    	pop bx
+[ 284]    01D6: 58                                    	pop ax
+[ 285]    01D7: 5F                                    	pop di
+[ 286]    01D8: 5E                                    	pop si
+[ 287]    01D9: C3                                    	ret
+[ 288]        :                                       check_should_clock_ring endp
+[ 289]        :                                       
+[ 290]        :                                       ; int 30h service code,add 1 sec
+[ 291]    01DA:                                       int_60_service:
+[ 292]    01DA: FA                                    cli
+[ 293]    01DB: FF 00 F1 00                           call far ptr add_time
+[ 294]    01DF: FB                                    sti
+[ 295]    01E0: CF                                    iret
+[ 296]    01E1:                                       int_60_end:
+[ 297]    01E1: 90                                    nop
+[ 298]        :                                       
+[ 299]        :                                       ; 30-37H
+[ 300]    01E2:                                       init_8259A proc
+[ 301]    01E2: 52                                    push dx
+[ 302]    01E3: 50                                    push ax
+[ 303]    01E4: BA 00 00                              mov dx,INT_8259A_PORT_0
+[ 304]    01E7: B0 13                                 mov al,INT_8259A_ICW1 ; ICW1,high trigger, single chip, icw4
+[ 305]    01E9: EE                                    out dx,al
+[ 306]    01EA: BA 02 00                              mov dx,INT_8259A_PORT_1
+[ 307]    01ED: B0 60                                 mov al,INT_8259A_ICW2 ;ICW2,IR0,60H
+[ 308]    01EF: EE                                    out dx,al
+[ 309]    01F0: B0 03                                 mov al,INT_8259A_ICW4 ;ICW4,
+[ 310]    01F2: EE                                    out dx,al
+[ 311]    01F3: B0 00                                 mov al,INT_8259A_OCW1;OCW1
+[ 312]    01F5: EE                                    out dx,al
+[ 313]    01F6: 58                                    pop ax
+[ 314]    01F7: 5A                                    pop dx
+[ 315]    01F8: C3                                    ret
+[ 316]        :                                       init_8259A endp
+[ 317]        :                                       
+[ 318]        :                                       ; init time 8255A
+[ 319]    01F9:                                       init_TIME_8255A  proc
+[ 320]    01F9: BA 16 00                              	mov dx,TIME_PORT_8255_CONFIG
+[ 321]    01FC: B0 89                                 	mov al,10001001B
+[ 322]    01FE: EE                                    	out dx,al
+[ 323]    01FF: BA 12 00                              	mov dx,TIME_PORT_8255_B
+[ 324]    0202: C3                                    	ret
+[ 325]        :                                       init_TIME_8255A  endp
+[ 326]        :                                       
+[ 327]        :                                       ; init BUZZER
+[ 328]    0203:                                       init_BUZZER_8255A  proc
+[ 329]    0203: BA 26 00                              	mov dx,BUZZER_PORT_8255_CONFIG
+[ 330]    0206: B0 88                                 	mov al,10001000B ;
+[ 331]    0208: EE                                    	out dx,al
+[ 332]    0209: C3                                    	ret
+[ 333]        :                                       init_BUZZER_8255A  endp
+[ 334]        :                                       
+[ 335]    020A:                                       init_TIME_8253A proc
+[ 336]        :                                       
+[ 337]    020A: BA 1E 00                              mov dx,TIME_PORT_8253_CONFIG
+[ 338]    020D: B0 36                                 mov al,00110110B ;
+[ 339]    020F: EE                                    out dx,al
+[ 340]    0210: BA 18 00                              mov dx,TIME_PORT_8253_A
+[ 341]    0213: B8 E8 03                              mov ax,1000
+[ 342]    0216: EE                                    out dx,al
+[ 343]    0217: 8A C4                                 mov al,ah
+[ 344]    0219: EE                                    out dx,al
+[ 345]        :                                       
+[ 346]    021A: BA 1E 00                              mov dx,TIME_PORT_8253_CONFIG
+[ 347]    021D: B0 76                                 mov al,01110110B ;
+[ 348]    021F: EE                                    out dx,al
+[ 349]    0220: BA 1A 00                              mov dx,TIME_PORT_8253_B
+[ 350]    0223: B8 E8 03                              mov ax,1000
+[ 351]    0226: EE                                    out dx,al
+[ 352]    0227: 8A C4                                 mov al,ah
+[ 353]    0229: EE                                    out dx,al
+[ 354]        :                                       
+[ 355]    022A: C3                                    ret
+[ 356]        :                                       init_TIME_8253A endp
+[ 357]        :                                       
+[ 358]        :                                       
+[ 359]    022B:                                       change_time_led_mode proc
+[ 360]    022B: 52                                    	push dx
+[ 361]    022C: 53                                    	push bx
+[ 362]    022D: 50                                    	push ax
+[ 363]        :                                       	; switch to the other mode
+[ 364]    022E: BB 16 00                              	lea bx,led_mode
+[ 365]    0231: 3E 8A 07                              mov al,ds:[bx]
+[ 366]    0234: 34 01                                 xor al,1
+[ 367]    0236: 3E 88 07                              mov ds:[bx],al
+[ 368]    0239: BA 12 00                              	mov dx,TIME_PORT_8255_B
+[ 369]    023C: B0 00                                 	mov al,0
+[ 370]    023E: EE                                    	out dx,al
+[ 371]    023F: 58                                    	pop ax
+[ 372]    0240: 5B                                    	pop bx
+[ 373]    0241: 5A                                    	pop dx
+[ 374]    0242: C3                                    	ret
+[ 375]        :                                       change_time_led_mode endp
+[ 376]        :                                       
+[ 377]    0243:                                       show_time_or_clock proc
+[ 378]    0243: 50                                    	push ax
+[ 379]    0244: 57                                    	push di
+[ 380]    0245: BF 17 00                              	lea di,led_time_clock
+[ 381]    0248: 3E 8A 05                              	mov al,ds:[di]
+[ 382]    024B: 34 01                                 	xor al,1
+[ 383]    024D: 3E 88 05                              	mov ds:[di],al
+[ 384]    0250: 5F                                    	pop di
+[ 385]    0251: 58                                    	pop ax
+[ 386]    0252: C3                                    	ret
+[ 387]        :                                       show_time_or_clock endp
+[ 388]        :                                       
+[ 389]    0253:                                       clock_sleepy proc
+[ 390]    0253: 56                                    	push si
+[ 391]    0254: 57                                    	push di
+[ 392]    0255: 50                                    	push ax
+[ 393]    0256: 53                                    	push bx
+[ 394]    0257: BE 0A 00                              	lea si,led_hour
+[ 395]    025A: BF 10 00                              	lea di,clock_hour
+[ 396]    025D: B9 06 00                              	mov cx,6
+[ 397]    0260:                                       	mov_time:
+[ 398]    0260: 3E 8A 04                              	mov al,ds:[si]
+[ 399]    0263: 3E 88 05                              	mov ds:[di],al
+[ 400]    0266: 46                                    	inc si
+[ 401]    0267: 47                                    	inc di
+[ 402]    0268: E2 F6                                 	loop mov_time
+[ 403]    026A: B9 05 00                              	mov cx,5
+[ 404]    026D:                                       	add_5_mins:
+[ 405]        :                                       	;int 3h
+[ 406]    026D: BB 12 00                              	lea bx,clock_min
+[ 407]    0270: E8 7A 01                              	call inc_min
+[ 408]    0273: BB 12 00                              	lea bx,clock_min
+[ 409]    0276: 3E 8A 07                              	mov al,ds:[bx]
+[ 410]    0279: 3C 00                                 	cmp al,0
+[ 411]    027B: 74 02                                 	je check_next
+[ 412]    027D: EB 10                                 	jmp add_5_mins_end
+[ 413]    027F:                                       	check_next:
+[ 414]    027F: 3E 8A 47 01                           	mov al,ds:[bx]+1
+[ 415]    0283: 3C 00                                 	cmp al,0
+[ 416]    0285: 74 02                                 	je add_a_hour
+[ 417]    0287: EB 06                                 	jmp add_5_mins_end
+[ 418]    0289:                                       	add_a_hour:
+[ 419]    0289: BB 10 00                              	lea bx,clock_hour
+[ 420]    028C: E8 35 01                              	call inc_hour
+[ 421]    028F:                                       	add_5_mins_end:
+[ 422]    028F: E2 DC                                 	loop add_5_mins
+[ 423]        :                                       	; close sound
+[ 424]    0291: BB 19 00                              	lea bx,clock_sounded
+[ 425]    0294: B0 00                                 	mov al,00H
+[ 426]    0296: 3E 88 07                              	mov ds:[bx],al
+[ 427]    0299:                                       clock_sleepy_end:
+[ 428]    0299: 5B                                    	pop bx
+[ 429]    029A: 58                                    	pop ax
+[ 430]    029B: 5F                                    	pop di
+[ 431]    029C: 5E                                    	pop si
+[ 432]    029D: C3                                    	ret
+[ 433]        :                                       clock_sleepy endp
+[ 434]        :                                       
+[ 435]        :                                       ; enable/disbale clock
+[ 436]    029E:                                       change_clock_status proc
+[ 437]    029E: 53                                    	push bx
+[ 438]    029F: 50                                    	push ax
+[ 439]    02A0: BB 18 00                              	lea bx,clock_enabled
+[ 440]    02A3: 3E 8A 07                              	mov al,ds:[bx]
+[ 441]    02A6: 34 01                                 	xor al,1
+[ 442]    02A8: 3E 88 07                              	mov ds:[bx],al
+[ 443]    02AB: 34 01                                 	xor al,1
+[ 444]    02AD: 3C 01                                 	cmp al,1
+[ 445]    02AF: 74 02                                 	je change_clock_status_check_sound
+[ 446]    02B1: EB 14                                 	jmp change_clock_status_end
+[ 447]    02B3:                                       	change_clock_status_check_sound:
+[ 448]    02B3: BB 19 00                              	lea bx,clock_sounded
+[ 449]    02B6: 3E 8A 07                              	mov al,ds:[bx]
+[ 450]    02B9: 3C 01                                 	cmp al,1
+[ 451]    02BB: 74 02                                 	je shutdown_clock
+[ 452]    02BD: EB 08                                 	jmp change_clock_status_end
+[ 453]    02BF:                                       	shutdown_clock:
+[ 454]    02BF: BB 19 00                              	lea bx,clock_sounded
+[ 455]    02C2: B0 00                                 	mov al,00H
+[ 456]    02C4: 3E 88 07                              	mov ds:[bx],al
+[ 457]    02C7:                                       	change_clock_status_end:
+[ 458]    02C7: 58                                    	pop ax
+[ 459]    02C8: 5B                                    	pop bx
+[ 460]    02C9: C3                                    	ret
+[ 461]        :                                       change_clock_status endp
+[ 462]        :                                       
+[ 463]        :                                       ; TIME_8255_PC
+[ 464]    02CA:                                       check_time_pc proc
+[ 465]    02CA: 50                                    push ax
+[ 466]    02CB: 53                                    push bx
+[ 467]    02CC: 52                                    push dx
+[ 468]    02CD: 51                                    	push cx
+[ 469]    02CE: 57                                    	push di
+[ 470]    02CF: BA 14 00                              mov dx,TIME_PORT_8255_C
+[ 471]    02D2: B9 00 00                              	mov cx,0
+[ 472]        :                                       
+[ 473]    02D5:                                       check_time_pc0:
+[ 474]    02D5: EC                                    in al,dx
+[ 475]    02D6: F6 D0                                 	not al
+[ 476]    02D8: 24 01                                 and al,00000001B
+[ 477]    02DA: 3C 00                                 	cmp al,0
+[ 478]    02DC: 74 05                                 je check_time_pc0_end
+[ 479]        :                                       ; PC0 pressed
+[ 480]    02DE: B9 01 00                              	mov cx,1
+[ 481]    02E1: EB F2                                 	jmp check_time_pc0
+[ 482]    02E3:                                       check_time_pc0_end:
+[ 483]    02E3: 83 F9 01                              	cmp cx,1
+[ 484]    02E6: 75 06                                 	jne check_time_pc1
+[ 485]        :                                       	;oper
+[ 486]    02E8: E8 40 FF                              call change_time_led_mode
+[ 487]        :                                       
+[ 488]    02EB: B9 00 00                              mov cx,0
+[ 489]        :                                       
+[ 490]        :                                       ; clock/time
+[ 491]    02EE:                                       check_time_pc1:
+[ 492]    02EE: EC                                    	in al,dx
+[ 493]    02EF: F6 D0                                 	not al
+[ 494]    02F1: 24 02                                 	and al,00000010B
+[ 495]    02F3: 3C 00                                 	cmp al,0
+[ 496]    02F5: 74 05                                 	je check_time_pc1_end
+[ 497]        :                                       	; clock : hour + 1
+[ 498]    02F7: B9 01 00                              	mov cx,1
+[ 499]    02FA: EB F2                                 	jmp check_time_pc1
+[ 500]    02FC:                                       check_time_pc1_end:
+[ 501]    02FC: 83 F9 01                              	cmp cx,1
+[ 502]    02FF: 75 09                                 	jne check_time_pc2
+[ 503]    0301: BB 10 00                              	lea bx,clock_hour
+[ 504]    0304: E8 3C FF                              	call show_time_or_clock
+[ 505]    0307: B9 00 00                              mov cx,0
+[ 506]        :                                       ; enable/disable clock
+[ 507]    030A:                                       check_time_pc2:
+[ 508]    030A: EC                                    	in al,dx
+[ 509]    030B: F6 D0                                 	not al
+[ 510]    030D: 24 04                                 	and al,00000100B
+[ 511]    030F: 3C 00                                 	cmp al,0
+[ 512]    0311: 74 05                                 	je check_time_pc2_end
+[ 513]        :                                       	; clock : hour + 1
+[ 514]    0313: B9 01 00                              	mov cx,1
+[ 515]    0316: EB F2                                 	jmp check_time_pc2
+[ 516]    0318:                                       check_time_pc2_end:
+[ 517]    0318: 83 F9 01                              	cmp cx,1
+[ 518]    031B: 75 09                                 	jne check_time_pc3
+[ 519]    031D: BB 10 00                              	lea bx,clock_hour
+[ 520]    0320: E8 7B FF                              	call change_clock_status
+[ 521]        :                                       
+[ 522]    0323: B9 00 00                              mov cx,0
+[ 523]        :                                       
+[ 524]    0326:                                       check_time_pc3:
+[ 525]    0326: EC                                    	in al,dx
+[ 526]    0327: F6 D0                                 	not al
+[ 527]    0329: 24 08                                 	and al,00001000B
+[ 528]    032B: 3C 00                                 	cmp al,0
+[ 529]    032D: 74 05                                 	je check_time_pc3_end
+[ 530]        :                                       	; clock : hour + 1
+[ 531]    032F: B9 01 00                              	mov cx,1
+[ 532]    0332: EB F2                                 	jmp check_time_pc3
+[ 533]    0334:                                       check_time_pc3_end:
+[ 534]    0334: 83 F9 01                              	cmp cx,1
+[ 535]    0337: 75 09                                 	jne check_time_pc4
+[ 536]    0339: BB 10 00                              	lea bx,clock_hour
+[ 537]    033C: E8 85 00                              	call inc_hour
+[ 538]        :                                       
+[ 539]    033F: B9 00 00                              mov cx,0
+[ 540]        :                                       
+[ 541]    0342:                                       check_time_pc4:	
+[ 542]    0342: EC                                    	in al,dx
+[ 543]    0343: F6 D0                                 	not al
+[ 544]    0345: 24 10                                 	and al,00010000B
+[ 545]    0347: 3C 00                                 	cmp al,0
+[ 546]    0349: 74 05                                 	je check_time_pc4_end
+[ 547]        :                                       	; clock : hour + 1
+[ 548]    034B: B9 01 00                              	mov cx,1
+[ 549]    034E: EB F2                                 	jmp check_time_pc4
+[ 550]    0350:                                       check_time_pc4_end:
+[ 551]    0350: 83 F9 01                              	cmp cx,1
+[ 552]    0353: 75 0E                                 	jne check_time_pc5
+[ 553]    0355: B9 05 00                              	mov cx,5
+[ 554]    0358:                                       	inc_5_mins:
+[ 555]    0358: BB 12 00                              	lea bx,clock_min
+[ 556]    035B: E8 8F 00                              	call inc_min
+[ 557]    035E: E2 F8                                 	loop inc_5_mins
+[ 558]        :                                       
+[ 559]    0360: B9 00 00                              mov cx,0
+[ 560]        :                                       
+[ 561]    0363:                                       check_time_pc5:
+[ 562]    0363: EC                                    	in al,dx
+[ 563]    0364: F6 D0                                 	not al
+[ 564]    0366: 24 20                                 	and al,00100000B
+[ 565]    0368: 3C 00                                 	cmp al,0
+[ 566]    036A: 74 05                                 	je check_time_pc5_end
+[ 567]        :                                       	; clock : hour + 1
+[ 568]    036C: B9 01 00                              	mov cx,1
+[ 569]    036F: EB F2                                 	jmp check_time_pc5
+[ 570]    0371:                                       check_time_pc5_end:
+[ 571]    0371: 83 F9 01                              	cmp cx,1
+[ 572]    0374: 75 09                                 	jne check_time_pc6
+[ 573]    0376: BB 10 00                              	lea bx,clock_hour
+[ 574]    0379: E8 D7 FE                              	call clock_sleepy
+[ 575]        :                                       
+[ 576]    037C: B9 00 00                              mov cx,0
+[ 577]        :                                       
+[ 578]        :                                       ; hour +=1
+[ 579]    037F:                                       check_time_pc6:
+[ 580]    037F: EC                                    	in al,dx
+[ 581]    0380: F6 D0                                 	not al
+[ 582]    0382: 24 40                                 	and al,01000000B
+[ 583]    0384: 3C 00                                 	cmp al,0
+[ 584]    0386: 74 05                                 	je check_time_pc6_end
+[ 585]        :                                       	; clock : hour + 1
+[ 586]    0388: B9 01 00                              	mov cx,1
+[ 587]    038B: EB F2                                 	jmp check_time_pc6
+[ 588]    038D:                                       check_time_pc6_end:
+[ 589]    038D: 83 F9 01                              	cmp cx,1
+[ 590]    0390: 75 0E                                 	jne check_time_pc7
+[ 591]    0392: BB 10 00                              	lea bx,clock_hour
+[ 592]    0395: FA                                    	cli
+[ 593]    0396: BB 0A 00                              	lea bx,led_hour
+[ 594]    0399: E8 28 00                              	call inc_hour
+[ 595]    039C: FB                                    	sti
+[ 596]        :                                       
+[ 597]    039D: B9 00 00                              mov cx,0
+[ 598]        :                                       
+[ 599]        :                                       ; hour +=1
+[ 600]    03A0:                                       check_time_pc7:
+[ 601]    03A0: EC                                    	in al,dx
+[ 602]    03A1: F6 D0                                 	not al
+[ 603]    03A3: 24 80                                 	and al,10000000B
+[ 604]    03A5: 3C 00                                 	cmp al,0
+[ 605]    03A7: 74 05                                 	je check_time_pc7_end
+[ 606]        :                                       	; clock : hour + 1
+[ 607]    03A9: B9 01 00                              	mov cx,1
+[ 608]    03AC: EB F2                                 	jmp check_time_pc7
+[ 609]    03AE:                                       check_time_pc7_end:
+[ 610]    03AE: 83 F9 01                              	cmp cx,1
+[ 611]    03B1: 75 0B                                 	jne check_time_end
+[ 612]    03B3: BB 10 00                              	lea bx,clock_hour
+[ 613]    03B6: FA                                    	cli
+[ 614]    03B7: BB 0C 00                              	lea bx,led_min
+[ 615]    03BA: E8 30 00                              	call inc_min
+[ 616]    03BD: FB                                    	sti
+[ 617]        :                                       
+[ 618]    03BE:                                       check_time_end:
+[ 619]    03BE: 5F                                    	pop di
+[ 620]    03BF: 59                                    	pop cx
+[ 621]    03C0: 5A                                    pop dx
+[ 622]    03C1: 5B                                    pop bx
+[ 623]    03C2: 58                                    pop ax
+[ 624]    03C3: C3                                    ret
+[ 625]        :                                       check_time_pc endp
+[ 626]        :                                       
+[ 627]        :                                       ; hour += 1
+[ 628]        :                                       ; bx -> hour	
+[ 629]    03C4:                                       inc_hour proc
+[ 630]    03C4: 50                                    	push ax
+[ 631]    03C5: 53                                    	push bx
+[ 632]        :                                       	; al <- decimal numbers
+[ 633]    03C6: 32 E4                                 	xor ah,ah
+[ 634]    03C8: 3E 8A 07                              	mov al,ds:[bx]
+[ 635]    03CB: 53                                    	push bx
+[ 636]    03CC: B3 0A                                 	mov bl,10
+[ 637]    03CE: F6 E3                                 	mul bl
+[ 638]    03D0: 5B                                    	pop bx
+[ 639]    03D1: 3E 02 47 01                           	add al,ds:[bx]+1
+[ 640]    03D5: FE C0                                 	inc al
+[ 641]    03D7: 3C 18                                 	cmp al,24
+[ 642]    03D9: 75 02                                 	jne inc_hour_end
+[ 643]    03DB: B0 00                                 	mov al,0
+[ 644]    03DD:                                       inc_hour_end:
+[ 645]        :                                       	; decimal -> [bx]
+[ 646]    03DD: 53                                    	push bx
+[ 647]    03DE: B3 0A                                 	mov bl,10
+[ 648]    03E0: F6 F3                                 	div bl
+[ 649]    03E2: 5B                                    	pop bx
+[ 650]    03E3: 3E 88 07                              	mov ds:[bx],al
+[ 651]    03E6: 3E 88 67 01                           	mov ds:[bx]+1,ah
+[ 652]    03EA: 5B                                    	pop bx
+[ 653]    03EB: 58                                    	pop ax
+[ 654]    03EC: C3                                    	ret
+[ 655]        :                                       inc_hour endp
+[ 656]        :                                       
+[ 657]        :                                       ; bx -> min
+[ 658]    03ED:                                       inc_min proc
+[ 659]    03ED: 50                                    	push ax
+[ 660]    03EE: 53                                    	push bx
+[ 661]        :                                       	; al <- decimal numbers
+[ 662]    03EF: 32 E4                                 	xor ah,ah
+[ 663]    03F1: 3E 8A 07                              	mov al,ds:[bx]
+[ 664]    03F4: 53                                    	push bx
+[ 665]    03F5: B3 0A                                 	mov bl,10
+[ 666]    03F7: F6 E3                                 	mul bl
+[ 667]    03F9: 5B                                    	pop bx
+[ 668]    03FA: 3E 02 47 01                           	add al,ds:[bx]+1
+[ 669]    03FE: FE C0                                 	inc al
+[ 670]    0400: 3C 3C                                 	cmp al,60
+[ 671]    0402: 75 02                                 	jne inc_min_end
+[ 672]    0404: B0 00                                 	mov al,0
+[ 673]    0406:                                       inc_min_end:
+[ 674]        :                                       	; decimal -> [bx]
+[ 675]    0406: 53                                    	push bx
+[ 676]    0407: B3 0A                                 	mov bl,10
+[ 677]    0409: F6 F3                                 	div bl
+[ 678]    040B: 5B                                    	pop bx
+[ 679]    040C: 3E 88 07                              	mov ds:[bx],al
+[ 680]    040F: 3E 88 67 01                           	mov ds:[bx]+1,ah
+[ 681]    0413: 5B                                    	pop bx
+[ 682]    0414: 58                                    	pop ax
+[ 683]    0415: C3                                    	ret
+[ 684]        :                                       inc_min endp
+[ 685]        :                                       
+[ 686]    0416:                                       show_time proc
+[ 687]    0416: 51                                    	push cx
+[ 688]    0417: 53                                    	push bx
+[ 689]    0418: 50                                    	push ax
+[ 690]    0419: 52                                    	push dx
+[ 691]    041A: BB 16 00                              	lea bx,led_mode
+[ 692]    041D: 3E 8A 07                              	mov al,ds:[bx]
+[ 693]    0420: 3C 00                                 	cmp al,LED_POWERSAVE
+[ 694]    0422: 75 02                                 	jne judge_mode
+[ 695]        :                                       	;int 3h
+[ 696]    0424: EB 4D                                 	jmp show_time_end
+[ 697]    0426:                                       judge_mode:
+[ 698]    0426: BB 17 00                              	lea bx,led_time_clock
+[ 699]    0429: 8A 07                                 	mov al,[bx]
+[ 700]    042B: 3C 00                                 	cmp al,LED_TIME_MODE ;00H
+[ 701]    042D: 74 05                                 	je time_mode
+[ 702]    042F:                                       clock_mode:
+[ 703]        :                                       	;int 3h
+[ 704]    042F: BB 10 00                              	lea bx,clock_hour
+[ 705]    0432: EB 03                                 	jmp show_time_start
+[ 706]    0434:                                       time_mode:
+[ 707]    0434: BB 0A 00                              	lea bx,led_hour
+[ 708]        :                                       
+[ 709]    0437:                                       show_time_start:
+[ 710]    0437: B9 06 00                              mov cx,6
+[ 711]    043A:                                       show_time_again:
+[ 712]    043A: 8B F9                                 	mov di,cx
+[ 713]    043C: 4F                                    	dec di
+[ 714]    043D: B0 01                                 	mov al,1
+[ 715]    043F: 51                                    	push cx
+[ 716]    0440: 8B CF                                 	mov cx,di
+[ 717]    0442: D2 E0                                 	shl al,cl
+[ 718]    0444: 59                                    	pop cx
+[ 719]    0445: BA 12 00                              	mov dx,TIME_PORT_8255_B
+[ 720]    0448: 53                                    	push bx
+[ 721]    0449: 8A 1E 18 00                           	mov bl,clock_enabled
+[ 722]    044D: 80 FB 00                              	cmp bl,0
+[ 723]    0450: 74 02                                 	jz check_time_clock
+[ 724]        :                                       	; clock enabled
+[ 725]    0452: 0C 40                                 	or al,01000000B
+[ 726]        :                                       	; show time enable
+[ 727]    0454:                                       	check_time_clock:
+[ 728]    0454: 8A 1E 17 00                           	mov bl,led_time_clock
+[ 729]    0458: 80 FB 00                              	cmp bl,0
+[ 730]    045B: 74 02                                 	jz cont
+[ 731]        :                                       	;int 3h
+[ 732]    045D: 0C 80                                 	or al,10000000B
+[ 733]    045F:                                       	cont:
+[ 734]    045F: 5B                                    	pop bx
+[ 735]    0460: EE                                    	out dx,al
+[ 736]    0461: BA 10 00                              	mov dx,TIME_PORT_8255_A
+[ 737]    0464: 53                                    	push bx
+[ 738]    0465: 32 FF                                 	xor bh,bh
+[ 739]    0467: 3E 8A 19                              	mov bl,ds:[bx+di]
+[ 740]    046A: 8A 07                                 	mov al,num_seg[bx]
+[ 741]    046C: EE                                    	out dx,al
+[ 742]    046D: 5B                                    	pop bx
+[ 743]    046E: E8 07 00                              	call delay
+[ 744]    0471: E2 C7                                 	loop show_time_again
+[ 745]    0473:                                       show_time_end:
+[ 746]    0473: 5A                                    	pop dx
+[ 747]    0474: 58                                    	pop ax
+[ 748]    0475: 5B                                    	pop bx
+[ 749]    0476: 59                                    	pop cx
+[ 750]    0477: C3                                    ret
+[ 751]        :                                       show_time endp
+[ 752]        :                                       
+[ 753]    0478:                                       delay proc
+[ 754]    0478: 51                                    push cx
+[ 755]    0479: B9 7F 00                              mov cx,127
+[ 756]    047C: E2 FE                                 loop $
+[ 757]    047E: 59                                    pop cx
+[ 758]    047F: C3                                    ret
+[ 759]        :                                       delay endp
+[ 760]        :                                       
+[ 761]    0480:                                       get_time proc
+[ 762]    0480: BB 0A 00                              	MOV BX ,OFFSET led_hour
+[ 763]    0483: 8A C5                                 	MOV AL,CH
+[ 764]    0485: E8 11 00                              	CALL C16_10 ;
+[ 765]    0488: BB 0C 00                              	MOV BX ,OFFSET led_min
+[ 766]    048B: 8A C1                                 	MOV AL,CL ;¡¤?
+[ 767]    048D: E8 09 00                              	CALL C16_10
+[ 768]    0490: BB 0E 00                              	MOV BX ,OFFSET led_sec
+[ 769]    0493: 8A C6                                 	MOV AL,DH ;??
+[ 770]    0495: E8 01 00                              	CALL C16_10
+[ 771]    0498: C3                                    ret
+[ 772]        :                                       get_time endp
+[ 773]        :                                       
+[ 774]    0499:                                       C16_10 PROC
+[ 775]    0499: 51                                    	PUSH CX
+[ 776]    049A: 50                                    	push ax
+[ 777]    049B: 53                                    	push bx
+[ 778]        :                                       
+[ 779]    049C: B4 00                                 	MOV AH,0
+[ 780]    049E: B9 0A 00                              	MOV CX,10
+[ 781]    04A1: F6 F1                                 	DIV CL
+[ 782]        :                                       	;ADD AX,3030H
+[ 783]    04A3: 88 07                                 	MOV [BX],AL
+[ 784]    04A5: 43                                    	INC BX
+[ 785]    04A6: 88 27                                 	MOV [BX],AH
+[ 786]        :                                       
+[ 787]    04A8: 5B                                    	pop bx
+[ 788]    04A9: 58                                    	pop ax
+[ 789]    04AA: 59                                    	POP CX
+[ 790]    04AB: C3                                    	RET
+[ 791]        :                                       C16_10 ENDP
+[ 792]        :                                       
+[ 793]        :                                       ; data
+[ 794]        :                                       
+[ 795]        :                                       
+[ 796]        :                                       
+[ 797]        :                                       CODE ENDS
+[ 798]        :                                       
+[ 799]        :                                       data segment
+[ 800]        :                                       
+[ 801]        :                                       ; data start
+[ 802]        :                                       TIME_PORT_8255_A EQU 0010H
+[ 803]        :                                       TIME_PORT_8255_B EQU 0012H
+[ 804]        :                                       TIME_PORT_8255_C EQU 0014H
+[ 805]        :                                       TIME_PORT_8255_CONFIG EQU 0016H
+[ 806]        :                                       
+[ 807]        :                                       BUZZER_PORT_8255_A EQU 0020H
+[ 808]        :                                       BUZZER_PORT_8255_B EQU 0022H
+[ 809]        :                                       BUZZER_PORT_8255_C EQU 0024H
+[ 810]        :                                       BUZZER_PORT_8255_CONFIG EQU 0026H
+[ 811]        :                                       
+[ 812]        :                                       TIME_PORT_8253_A EQU 0018H
+[ 813]        :                                       TIME_PORT_8253_B EQU 001AH
+[ 814]        :                                       TIME_PORT_8253_C EQU 001CH
+[ 815]        :                                       TIME_PORT_8253_CONFIG EQU 001EH
+[ 816]        :                                       
+[ 817]        :                                       INT_8259A_PORT_0 EQU 0000H
+[ 818]        :                                       INT_8259A_PORT_1 EQU 0002H
+[ 819]        :                                       
+[ 820]        :                                       INT_8259A_ICW1 EQU 00010011B ; ICW1,high trigger, single chip, icw4
+[ 821]        :                                       INT_8259A_ICW2 EQU 01100000B ;ICW2,IR0,60H
+[ 822]        :                                       INT_8259A_ICW4 EQU 00000011B ; auto EOI
+[ 823]        :                                       INT_8259A_OCW1 EQU 00000000B
+[ 824]        :                                       
+[ 825]        :                                       COM_PORT_8251A_DATA EQU 0008H
+[ 826]        :                                       COM_PORT_8251A_CONTROL EQU 000AH
+[ 827]        :                                       
+[ 828]        :                                       COM_REFRESH_WEATHER_CH EQU 'R'
+[ 829]        :                                       COM_NEXT_WEATHER_CH EQU 'N'
+[ 830]        :                                       
+[ 831]        :                                       LED_POWERSAVE EQU 00H
+[ 832]        :                                       LED_NORMOL EQU 01H
+[ 833]        :                                       
+[ 834]        :                                       LED_TIME_MODE EQU 00H
+[ 835]        :                                       LED_CLOCK_MODE EQU 01H
+[ 836]        :                                       
+[ 837]    04B0: C0 F9 A4 B0 99 92 82 F8 80 90         num_seg db 0C0H,0F9H,0A4H,0B0H,99H,92H,82H,0F8H,80H,90H; 0-9
+[ 838]        :                                       
+[ 839]    04BA: 01 03                                 led_hour db 1,3
+[ 840]    04BC: 05 09                                 led_min db 5,9
+[ 841]    04BE: 05 05                                 led_sec db 5,5
+[ 842]        :                                       
+[ 843]    04C0: 00 06                                 clock_hour db 0,6
+[ 844]    04C2: 00 00                                 clock_min db 0,0
+[ 845]    04C4: 00 00                                 clock_sec db 0,0
+[ 846]        :                                       
+[ 847]    04C6: 01                                    led_mode db 01h ;
+[ 848]    04C7: 00                                    led_time_clock db 00H;
+[ 849]    04C8: 00                                    clock_enabled db 00H ;
+[ 850]    04C9: 00                                    clock_sounded db 00H ;
+[ 851]    04CA: 00                                    hour_sounded db 00H
+[ 852]        :                                       
+[ 853]    04CB: 07                                    light_values db 00000111B
+[ 854]        :                                       
+[ 855]        :                                       ; data end
+[ 856]        :                                       
+[ 857]        :                                       data ends
+[ 858]        :                                       
+[ 859]        :                                       stack segment 'stack'
+[ 860]        :                                       
+[ 861]    04D0: 00 00 00 00 00 00 00 00 00 00 00 00   sta dw 256 dup(0)
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00             
+[ 862]    06D0:                                       sta_length EQU $
+[ 863]        :                                       
+[ 864]        :                                       stack ends
+[ 865]        :                                       
+[ 866]        :                                       
+[ 867]        :                                       END START
+[ 868]        :                                       
+[ 869]        :                                       
+[ 870]        :                                       
+[ 871]        :                                       
+ 
+===================================================================================================
+ 
+EXE HEADER - bytes from 0000 to 01FF inclusive.
+
+0000: 4D      -   exe signature (M)
+0001: 5A      -   exe signature (Z)
+0002: D0      -   bytes on last page (l.byte)
+0003: 00      -   bytes on last page (h.byte)
+0004: 05      -   512 byte pages in file (l.byte)
+0005: 00      -   512 byte pages in file (h.byte)
+0006: 02      -   relocations (l.byte)
+0007: 00      -   relocations (h.byte)
+0008: 20      -   paragraphs in header (l.byte)
+0009: 00      -   paragraphs in header (h.byte)
+000A: 00      -   minimum memory (l.byte)
+000B: 00      -   minimum memory (h.byte)
+000C: FF      -   maximum memory (l.byte)
+000D: FF      -   maximum memory (h.byte)
+000E: 4D      -   SS - stack segment (l.byte)
+000F: 00      -   SS - stack segment (h.byte)
+0010: 00      -   SP - stack pointer (l.byte)
+0011: 02      -   SP - stack pointer (h.byte)
+0012: 65      -   check sum (l.byte)
+0013: 05      -   check sum (h.byte)
+0014: 00      -   IP - instruction pointer (l.byte)
+0015: 00      -   IP - instruction pointer (h.byte)
+0016: 00      -   CS - code segment (l.byte)
+0017: 00      -   CS - code segment (h.byte)
+0018: 1E      -   relocation table adress (l.byte)
+0019: 00      -   relocation table adress (h.byte)
+001A: 00      -   overlay number (l.byte)
+001B: 00      -   overlay number (h.byte)
+001C: 01      -   signature (l.byte)
+001D: 00      -   signature (h.byte)
+001E: 01      -   relocation table - offset inside segment (l.byte)
+001F: 00      -   relocation table - offset inside segment (h.byte)
+0020: 00      -   relocation table - segment anchor (l.byte)
+0021: 00      -   relocation table - segment anchor (h.byte)
+0022: 06      -   relocation table - offset inside segment (l.byte)
+0023: 00      -   relocation table - offset inside segment (h.byte)
+0024: 00      -   relocation table - segment anchor (l.byte)
+0025: 00      -   relocation table - segment anchor (h.byte)
+0026 to 01FF  -   reserved relocation area  (00) 
+
+
+
+
+===================================================================================================

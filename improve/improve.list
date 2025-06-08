@@ -1,0 +1,105 @@
+EMU8086 GENERATED LISTING. MACHINE CODE <- SOURCE.
+ 
+wanchengyici1.exe -- emu8086 assembler version: 4.08  
+ 
+[ 2025/6/7  --  22:15:51 ] 
+ 
+===================================================================================================
+[LINE]     LOC: MACHINE CODE                          SOURCE
+===================================================================================================
+ 
+[   1]        :                                       DATAS SEGMENT
+[   2]    0000: 3F 06 5B 4F 66 6D 7D 07 7F 6F 77 7C   NUMBER DB 3FH, 06H, 5BH, 4FH, 66H, 6DH, 7DH, 07H, 7FH, 6FH, 77H, 7CH, 39H, 5EH, 79H, 71H
+                39 5E 79 71                         
+[   3]        :                                       ;共阳极六位 ， 0 ， 1 ， 2 ， 3 ， 4 ， 5 ， 6 ， 7 ， 8 ， 9 ， A ， B ， C ， D ， E ， F
+[   4]        :                                       DATAS ENDS
+[   5]        :                                       
+[   6]        :                                       CODES SEGMENT
+[   7]        :                                       ASSUME CS : CODES, DS : DATAS
+[   8]    0010:                                       START:
+[   9]    0010: B0 89                                 MOV AL, 89H ;A、B口模式0（基本）输出，C口高低位均输入。
+[  10]    0012: BA F6 00                              MOV DX, 0F6H ;8255的控制端口号。
+[  11]    0015: EE                                    OUT DX, AL ;将模式选择控制字输出到8255控制端口。
+[  12]    0016: B8 00 00                              MOV AX, DATAS
+[  13]    0019: 8E D8                                 MOV DS, AX ;数据段需要手动初始化，代码段不用。
+[  14]    001B:                                       SHOW:
+[  15]    001B: BE 00 00                              LEA SI, NUMBER ;读数码管数字表地址到SI（即首位的地址）。
+[  16]    001E: B3 01                                 MOV BL, 01H ;BL == 0001。
+[  17]    0020: B9 10 00                              MOV CX, 16 ;设置循环次数为16（显示所有字符）
+[  18]    0023:                                       NEXTR:
+[  19]    0023: 8A C3                                 MOV AL, BL ;AL == 0001(initial)，AL == 1左移一位。
+[  20]    0025: BA F2 00                              MOV DX, 0F2H ;8255的B口端口号。
+[  21]    0028: EE                                    OUT DX, AL ;选中左起第1位(initial)，选中左起下一位。
+[  22]    0029: 8A 04                                 MOV AL, [SI] ;AL == 数字表第1位的编码(initial)。
+[  23]    002B: BA F0 00                              MOV DX, 0F0H ;8255的A口端口号。
+[  24]    002E: EE                                    OUT DX, AL ;输出该数字的字模。
+[  25]    002F: E8 12 00                              CALL DELAY ;延时。
+[  26]    0032: 83 C6 01                              ADD SI, 01H ;SI指向数字表下一位。
+[  27]    0035: D0 E3                                 SAL BL, 1 ;BL左移1位，低位补0，即显示左起下一位。
+[  28]    0037: 80 FB 40                              CMP BL, 40H ;即将显示左起第7位，但这只是个6位数码管。
+[  29]    003A: 74 02                                 JZ RESET_BL ;如果BL达到40H，重置为01H
+[  30]    003C: EB 02                                 JMP NEXT_CHAR
+[  31]    003E:                                       RESET_BL:
+[  32]    003E: B3 01                                 MOV BL, 01H ;重置BL为01H
+[  33]    0040:                                       NEXT_CHAR:
+[  34]    0040: E2 E1                                 LOOP NEXTR ;循环16次
+[  35]    0042: EB D7                                 JMP SHOW ;重新开始显示
+[  36]    0044:                                       DELAY:
+[  37]    0044: 53                                    PUSH BX        ;保存BX的值
+[  38]    0045: BB FF 00                              MOV BX, 0FFH   ;外层循环计数
+[  39]    0048:                                       DELAY1:
+[  40]    0048: B9 FF 00                              MOV CX, 0FFH   ;内层循环计数
+[  41]    004B:                                       DELAY2:
+[  42]    004B: E2 FE                                 LOOP DELAY2    ;内层循环
+[  43]    004D: 4B                                    DEC BX         ;外层循环计数减1
+[  44]    004E: 75 F8                                 JNZ DELAY1     ;如果BX不为0，继续外层循环
+[  45]    0050: 5B                                    POP BX         ;恢复BX的值
+[  46]    0051: C3                                    RET            ;返回CALL调用
+[  47]        :                                       CODES ENDS
+[  48]        :                                       END START
+[  49]        :                                       
+ 
+===================================================================================================
+ 
+EXE HEADER - bytes from 0000 to 01FF inclusive.
+
+0000: 4D      -   exe signature (M)
+0001: 5A      -   exe signature (Z)
+0002: 52      -   bytes on last page (l.byte)
+0003: 00      -   bytes on last page (h.byte)
+0004: 02      -   512 byte pages in file (l.byte)
+0005: 00      -   512 byte pages in file (h.byte)
+0006: 01      -   relocations (l.byte)
+0007: 00      -   relocations (h.byte)
+0008: 20      -   paragraphs in header (l.byte)
+0009: 00      -   paragraphs in header (h.byte)
+000A: 00      -   minimum memory (l.byte)
+000B: 00      -   minimum memory (h.byte)
+000C: FF      -   maximum memory (l.byte)
+000D: FF      -   maximum memory (h.byte)
+000E: 00      -   SS - stack segment (l.byte)
+000F: 00      -   SS - stack segment (h.byte)
+0010: 00      -   SP - stack pointer (l.byte)
+0011: 00      -   SP - stack pointer (h.byte)
+0012: DA      -   check sum (l.byte)
+0013: 1C      -   check sum (h.byte)
+0014: 00      -   IP - instruction pointer (l.byte)
+0015: 00      -   IP - instruction pointer (h.byte)
+0016: 01      -   CS - code segment (l.byte)
+0017: 00      -   CS - code segment (h.byte)
+0018: 1E      -   relocation table adress (l.byte)
+0019: 00      -   relocation table adress (h.byte)
+001A: 00      -   overlay number (l.byte)
+001B: 00      -   overlay number (h.byte)
+001C: 01      -   signature (l.byte)
+001D: 00      -   signature (h.byte)
+001E: 07      -   relocation table - offset inside segment (l.byte)
+001F: 00      -   relocation table - offset inside segment (h.byte)
+0020: 01      -   relocation table - segment anchor (l.byte)
+0021: 00      -   relocation table - segment anchor (h.byte)
+0022 to 01FF  -   reserved relocation area  (00) 
+
+
+
+
+===================================================================================================

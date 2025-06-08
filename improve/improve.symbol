@@ -1,0 +1,19 @@
+< THE SYMBOL TABLE >  wanchengyici1.exe  --  emu8086 assembler version: 4.08 
+===================================================================================================
+Name                     	Offset    	Size      	Type      	Segment   
+===================================================================================================
+DATAS                    	00000     	-5        	SEGMENT   	(ITSELF)  
+NUMBER                   	00000     	1         	VAR       	DATAS     
+CODES                    	00001     	-5        	SEGMENT   	(ITSELF)  
+START                    	00000     	-1        	LABEL     	CODES     
+SHOW                     	0000B     	-1        	LABEL     	CODES     
+NEXTR                    	00013     	-1        	LABEL     	CODES     
+RESET_BL                 	0002E     	-1        	LABEL     	CODES     
+NEXT_CHAR                	00030     	-1        	LABEL     	CODES     
+DELAY                    	00034     	-1        	LABEL     	CODES     
+DELAY1                   	00038     	-1        	LABEL     	CODES     
+DELAY2                   	0003B     	-1        	LABEL     	CODES     
+===================================================================================================
+[ 2025/6/7  --  22:15:51 ] 
+< END >
+ 

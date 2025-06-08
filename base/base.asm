@@ -1,0 +1,34 @@
+.MODEL SMALL
+.STACK 100H
+.DATA
+    	 PORTA EQU 00H 		
+    	 PORT_CON EQU 06H	 
+   	 DELAY_COUNT DW 1FFFH 			
+    	  NUM DB 11111001B, 10100100B, 10110000B, 10011001B, 10010010B, 10000010B, 11011000B, 10000000B, 10010000B, 10001000B, 10000011B, 11000110B, 10100001B, 10000110B, 10001110B
+    	  ; 1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
+
+.CODE
+MAIN PROC
+	 MOV AX, @DATA
+	 MOV DS, AX
+   START:
+	 MOV DX, PORT_CON    
+	 MOV AL, 80H 	          			
+	 OUT DX, AL 		
+	 MOV SI, OFFSET NUM  
+   NEXT_DIGIT:
+    	 MOV BX, DELAY_COUNT 
+   DELAY:
+  	 MOV AL, [SI]		
+  	 MOV DX, PORTA	        				 
+         OUT DX, AL		
+   	 DEC BX     
+    	 JNZ DELAY  		
+   	 INC SI  			
+   	 CMP SI, OFFSET NUM + 15  
+   	 JNE NEXT_DIGIT          
+   	 MOV SI, OFFSET NUM      
+   	 JMP NEXT_DIGIT          
+MAIN ENDP
+END MAIN
+

@@ -1,0 +1,48 @@
+DATAS SEGMENT
+NUMBER DB 3FH, 06H, 5BH, 4FH, 66H, 6DH, 7DH, 07H, 7FH, 6FH, 77H, 7CH, 39H, 5EH, 79H, 71H
+;共阳极六位 ， 0 ， 1 ， 2 ， 3 ， 4 ， 5 ， 6 ， 7 ， 8 ， 9 ， A ， B ， C ， D ， E ， F
+DATAS ENDS
+
+CODES SEGMENT
+ASSUME CS : CODES, DS : DATAS
+START:
+MOV AL, 89H ;A、B口模式0（基本）输出，C口高低位均输入。
+MOV DX, 0F6H ;8255的控制端口号。
+OUT DX, AL ;将模式选择控制字输出到8255控制端口。
+MOV AX, DATAS
+MOV DS, AX ;数据段需要手动初始化，代码段不用。
+SHOW:
+LEA SI, NUMBER ;读数码管数字表地址到SI（即首位的地址）。
+MOV BL, 01H ;BL == 0001。
+MOV CX, 16 ;设置循环次数为16（显示所有字符）
+NEXTR:
+MOV AL, BL ;AL == 0001(initial)，AL == 1左移一位。
+MOV DX, 0F2H ;8255的B口端口号。
+OUT DX, AL ;选中左起第1位(initial)，选中左起下一位。
+MOV AL, [SI] ;AL == 数字表第1位的编码(initial)。
+MOV DX, 0F0H ;8255的A口端口号。
+OUT DX, AL ;输出该数字的字模。
+CALL DELAY ;延时。
+ADD SI, 01H ;SI指向数字表下一位。
+SAL BL, 1 ;BL左移1位，低位补0，即显示左起下一位。
+CMP BL, 40H ;即将显示左起第7位，但这只是个6位数码管。
+JZ RESET_BL ;如果BL达到40H，重置为01H
+JMP NEXT_CHAR
+RESET_BL:
+MOV BL, 01H ;重置BL为01H
+NEXT_CHAR:
+LOOP NEXTR ;循环16次
+JMP SHOW ;重新开始显示
+DELAY:
+    PUSH BX        ;保存BX的值
+    MOV BX, 0FFH   ;外层循环计数
+DELAY1:
+    MOV CX, 0FFH   ;内层循环计数
+DELAY2:
+    LOOP DELAY2    ;内层循环
+    DEC BX         ;外层循环计数减1
+    JNZ DELAY1     ;如果BX不为0，继续外层循环
+    POP BX         ;恢复BX的值
+    RET            ;返回CALL调用
+CODES ENDS
+END START
